@@ -10,8 +10,11 @@ export interface FlightSegmentSummary {
   terminal?: string;
 }
 
+export type OfferSource = 'duffel' | 'kiwi' | 'skyscanner' | 'travelpayouts' | 'amadeus';
+
 export interface FlightOfferSummary {
   id: string;
+  source: OfferSource;
   price: {
     total: string;
     currency: string;

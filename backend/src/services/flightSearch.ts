@@ -1,7 +1,14 @@
 import { duffelRequest } from './duffelClient';
 import { TravelRequestInput, FlightOfferSummary } from '../types/travel';
+import { searchKiwiFlights } from './providers/kiwiProvider';
+import { searchSkyscannerFlights } from './providers/skyscannerProvider';
+import { searchTravelpayoutsFlights } from './providers/travelpayoutsProvider';
+import { searchAmadeusFlights } from './providers/amadeusProvider';
 
-const RESULTS_TO_RETURN = 5;
+// Bumped from 5 now that results are aggregated across multiple sources -
+// only 'duffel'-sourced offers are ever actually booked (see
+// findBookableOffer); the rest are shown for price comparison only.
+const RESULTS_TO_RETURN = 8;
 
 const CABIN_CLASS_MAP: Record<TravelRequestInput['trip']['cabinClass'], string> = {
   ECONOMY: 'economy',
@@ -86,18 +93,29 @@ async function fetchOfferPool(trip: TravelRequestInput['trip']): Promise<DuffelO
 
 export async function searchCheapestFlights(input: TravelRequestInput): Promise<FlightOfferSummary[]> {
   const { trip } = input;
-  const offers = await fetchOfferPool(trip);
-  const sorted = [...offers].sort((a, b) => Number(a.total_amount) - Number(b.total_amount));
+
+  const [duffelOffers, ...comparisonResults] = await Promise.all([
+    fetchOfferPool(trip).then((offers) => offers.map((offer) => toSummary(offer, trip.cabinClass))),
+    // Comparison-only sources - each is independently defensive (returns []
+    // on any error/missing key) so one failing provider never blocks Duffel.
+    searchKiwiFlights(input),
+    searchSkyscannerFlights(input),
+    searchTravelpayoutsFlights(input),
+    searchAmadeusFlights(input),
+  ]);
+
+  const allOffers = [duffelOffers, ...comparisonResults].flat();
+  const sorted = allOffers.sort((a, b) => Number(a.price.total) - Number(b.price.total));
 
   const preferred = trip.preferredAirlines;
   if (preferred?.length) {
-    const filtered = sorted.filter((offer) => preferred.includes(offer.owner.iata_code));
+    const filtered = sorted.filter((offer) => offer.airlines.some((code) => preferred.includes(code)));
     if (filtered.length >= RESULTS_TO_RETURN) {
-      return filtered.slice(0, RESULTS_TO_RETURN).map((offer) => toSummary(offer, trip.cabinClass));
+      return filtered.slice(0, RESULTS_TO_RETURN);
     }
   }
 
-  return sorted.slice(0, RESULTS_TO_RETURN).map((offer) => toSummary(offer, trip.cabinClass));
+  return sorted.slice(0, RESULTS_TO_RETURN);
 }
 
 /**
@@ -204,7 +222,8 @@ function toSummary(offer: DuffelOffer, cabinClass: string): FlightOfferSummary {
   const tax = offer.tax_amount ?? (base ? String(Number(offer.total_amount) - Number(base)) : undefined);
 
   return {
-    id: offer.id,
+    id: `duffel:${offer.id}`,
+    source: 'duffel',
     price: {
       total: offer.total_amount,
       currency: offer.total_currency,

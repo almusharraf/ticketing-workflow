@@ -722,6 +722,18 @@ body {
   margin-bottom: var(--space-2);
 }
 
+.flight-card__source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-2);
+}
+
+.flight-card__source-note {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 .flight-card__airline {
   display: flex;
   align-items: center;

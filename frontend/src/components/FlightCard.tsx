@@ -12,6 +12,14 @@ const BADGE_CONFIG: Record<FlightBadge, { label: string; variant: 'success' | 'a
   recommended: { label: 'Preferred Airline', variant: 'success' },
 };
 
+const SOURCE_LABELS: Record<FlightOfferSummary['source'], string> = {
+  duffel: 'Duffel',
+  kiwi: 'Kiwi.com',
+  skyscanner: 'Skyscanner',
+  travelpayouts: 'Travelpayouts',
+  amadeus: 'Amadeus',
+};
+
 function refundLabel(refundability?: FlightOfferSummary['refundability']): string {
   switch (refundability) {
     case 'fully_refundable':
@@ -72,6 +80,17 @@ export function FlightCard({ offer, badges, selected, onSelect }: Props) {
           </span>
           <span className="flight-card__price-note">per traveler</span>
         </div>
+      </div>
+
+      <div className="flight-card__source">
+        <StatusBadge variant={offer.source === 'duffel' ? 'default' : 'info'}>
+          via {SOURCE_LABELS[offer.source]}
+        </StatusBadge>
+        {offer.source !== 'duffel' && (
+          <span className="flight-card__source-note">
+            Comparison price only — fare is confirmed via Duffel at booking
+          </span>
+        )}
       </div>
 
       <div className="flight-card__itineraries">

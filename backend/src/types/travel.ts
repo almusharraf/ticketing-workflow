@@ -38,8 +38,11 @@ export interface FlightSegmentSummary {
   terminal?: string;
 }
 
+export type OfferSource = 'duffel' | 'kiwi' | 'skyscanner' | 'travelpayouts' | 'amadeus';
+
 export interface FlightOfferSummary {
   id: string;
+  source: OfferSource;
   price: {
     total: string;
     currency: string;
@@ -63,7 +66,9 @@ export interface FlightOfferSummary {
     duration: string;
     segments: FlightSegmentSummary[];
   }[];
-  raw: unknown; // full Duffel offer - needed unmodified for order creation
+  // Only 'duffel' offers are matched + booked as-is (see findBookableOffer) -
+  // this is the provider's original payload, kept for debugging/display only.
+  raw: unknown;
 }
 
 export type TravelRequestStatus =
