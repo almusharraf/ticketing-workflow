@@ -6,9 +6,9 @@ flights via Duffel, pick one, and book it.
 ## Layout
 
 ```
-server/   Express + TypeScript API (port 4000)
-web/      React + Vite frontend (port 5173)
-dev.sh    Runs both together (macOS/Linux)
+backend/   Express + TypeScript API (port 4000)
+frontend/  React + Vite frontend (port 5173)
+dev.sh     Runs both together (macOS/Linux)
 ```
 
 ## Prerequisites
@@ -22,18 +22,18 @@ dev.sh    Runs both together (macOS/Linux)
 Install dependencies for both apps:
 
 ```bash
-cd server && npm install
-cd ../web && npm install
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
 Configure the server environment:
 
 ```bash
-cd server
+cd backend
 cp .env.example .env
 ```
 
-Edit `server/.env` and set your Duffel key:
+Edit `backend/.env` and set your Duffel key:
 
 ```
 PORT=4000
@@ -52,11 +52,11 @@ DUFFEL_API_VERSION=v2
 **Windows (PowerShell)** — run each app in its own terminal:
 
 ```powershell
-cd server; npm run dev
+cd backend; npm run dev
 ```
 
 ```powershell
-cd web; npm run dev
+cd frontend; npm run dev
 ```
 
 Then open http://localhost:5173. The API listens on http://localhost:4000

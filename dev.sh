@@ -4,10 +4,10 @@ set -e
 
 cd "$(dirname "$0")"
 
-(cd server && npm run dev) &
+(cd backend && npm run dev) &
 SERVER_PID=$!
 
-(cd web && npm run dev) &
+(cd frontend && npm run dev) &
 WEB_PID=$!
 
 trap 'kill $SERVER_PID $WEB_PID 2>/dev/null' EXIT INT TERM
