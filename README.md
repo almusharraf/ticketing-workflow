@@ -1,11 +1,17 @@
 # Travel Booking Module
 
-An ERP add-on for employee leave travel: submit a trip request, search real
-flights, pick one, and book it. Flight search aggregates prices from Duffel,
-Kiwi.com, Skyscanner, Travelpayouts, and Amadeus for comparison — **booking
-always happens through Duffel**, which re-searches and matches the chosen
-flight at the current fare before purchase, regardless of which source showed
-it cheapest.
+An ERP add-on for employee leave travel, fully automated end to end: the
+employee's profile and already-decided trip are pulled from the ERP directory
+(no manual form), the system searches and auto-selects the cheapest bookable
+fare, a manager approves, and it's booked automatically on the balance
+already on file — no card details entered anywhere in this app. A downloadable
+PDF ticket is generated once booked.
+
+Flight search aggregates prices from Duffel, Kiwi.com, Skyscanner,
+Travelpayouts, and Amadeus for comparison — **booking always happens through
+Duffel**, which re-searches and matches the cheapest fare found at the
+current price before purchase; comparison-only sources never affect what's
+actually booked.
 
 ## Layout
 
@@ -81,6 +87,16 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
 
 - Trip requests are stored in memory on the server — restarting the server
   clears them.
+- Employees and their pending trips are mocked in
+  `backend/src/data/employeeDirectory.ts` (stand-in for the ERP's employee +
+  HR-approved-leave records). Add/edit entries there for more test cases.
+- The automated flow (`POST /api/travel-requests/auto`) only ever picks a
+  `source: 'duffel'` offer to submit for approval, even though search results
+  are aggregated across all providers — only Duffel offers can actually be
+  matched and booked.
+- Ticket PDFs (`GET /api/travel-requests/:id/ticket.pdf`) are generated with
+  `pdfkit` from the booking record — only available once a request reaches
+  `booked` status.
 - In Duffel's sandbox, search results include synthetic test content and can
   vary in reliability by route. `LOS`–`LHR` is a known-good route for testing.
 - Comparison-source integrations (Kiwi, Skyscanner, Travelpayouts, Amadeus)

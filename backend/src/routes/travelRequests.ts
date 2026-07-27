@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { createTravelRequest, getTravelRequest, updateTravelRequest } from '../store/travelRequests';
 import { bookOffer } from '../services/booking';
+import { searchCheapestFlights } from '../services/flightSearch';
+import { generateTicketPdf } from '../services/ticketPdf';
+import { getEmployeeRecord } from '../data/employeeDirectory';
 import { TravelRequestInput, FlightOfferSummary } from '../types/travel';
 
 export const travelRequestsRouter = Router();
@@ -26,6 +29,52 @@ travelRequestsRouter.post('/', (req, res) => {
   });
 
   res.status(201).json({ request: record });
+});
+
+// Fully automated intake: pulls the employee's profile + already-decided trip
+// from the ERP directory (no manual form), searches, and auto-selects the
+// cheapest Duffel-bookable fare - comparison-only sources (Kiwi/Skyscanner/
+// Travelpayouts/Amadeus) are excluded here since only Duffel offers can
+// actually be booked (see flightSearch.findBookableOffer).
+travelRequestsRouter.post('/auto', async (req, res) => {
+  const employeeId = req.body?.employeeId as string | undefined;
+  if (!employeeId) {
+    res.status(400).json({ error: 'employeeId is required' });
+    return;
+  }
+
+  const directoryEntry = getEmployeeRecord(employeeId);
+  if (!directoryEntry) {
+    res.status(404).json({ error: `No ERP record found for employee ${employeeId}` });
+    return;
+  }
+
+  try {
+    const offers = await searchCheapestFlights({
+      employee: directoryEntry.profile,
+      trip: directoryEntry.pendingTrip,
+    });
+    const cheapestBookable = offers.find((offer) => offer.source === 'duffel');
+
+    if (!cheapestBookable) {
+      res.status(502).json({ error: 'No bookable fare found for this route right now' });
+      return;
+    }
+
+    const record = createTravelRequest({
+      employeeId: directoryEntry.employeeId,
+      employee: directoryEntry.profile,
+      trip: directoryEntry.pendingTrip,
+      selectedOffer: cheapestBookable,
+      managerName: directoryEntry.managerName,
+      managerEmail: directoryEntry.managerEmail,
+    });
+
+    res.status(201).json({ request: record });
+  } catch (err: any) {
+    console.error('[travelRequests.auto] search failed', err);
+    res.status(502).json({ error: 'Flight search failed', detail: err?.message });
+  }
 });
 
 travelRequestsRouter.get('/:id', (req, res) => {
@@ -78,6 +127,24 @@ travelRequestsRouter.post('/:id/approve', async (req, res) => {
     });
     res.status(502).json({ request: updated, error: 'Booking failed', detail: err?.message });
   }
+});
+
+travelRequestsRouter.get('/:id/ticket.pdf', (req, res) => {
+  const record = getTravelRequest(req.params.id);
+  if (!record) {
+    res.status(404).json({ error: 'Travel request not found' });
+    return;
+  }
+  if (record.status !== 'booked' || !record.booking) {
+    res.status(409).json({ error: 'Ticket is only available once the request is booked' });
+    return;
+  }
+
+  const doc = generateTicketPdf(record);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="ticket-${record.booking.pnr}.pdf"`);
+  doc.pipe(res);
+  doc.end();
 });
 
 travelRequestsRouter.post('/:id/reject', (req, res) => {

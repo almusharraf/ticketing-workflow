@@ -60,7 +60,9 @@ export function RequestStatus({ request, onApprove, onReject, onStartOver, decid
         <div className="manager-panel">
           <div className="manager-panel__header">
             <StatusBadge variant="warning">Awaiting manager</StatusBadge>
-            <p className="manager-panel__text">Your manager needs to approve this request before it's booked.</p>
+            <p className="manager-panel__text">
+              {request.managerName ?? 'Your manager'} needs to approve this request before it's booked.
+            </p>
           </div>
           <div className="manager-panel__actions">
             <Button variant="ghost" onClick={onReject} disabled={deciding}>

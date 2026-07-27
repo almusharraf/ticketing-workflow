@@ -4,6 +4,7 @@ import { config } from './config';
 import { flightsRouter } from './routes/flights';
 import { placesRouter } from './routes/places';
 import { travelRequestsRouter } from './routes/travelRequests';
+import { employeesRouter } from './routes/employees';
 
 const app = express();
 app.use(cors());
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use('/api/flights', flightsRouter);
 app.use('/api/places', placesRouter);
 app.use('/api/travel-requests', travelRequestsRouter);
+app.use('/api/employees', employeesRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 

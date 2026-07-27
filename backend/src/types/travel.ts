@@ -81,6 +81,7 @@ export type TravelRequestStatus =
 
 export interface TravelRequestRecord {
   id: string;
+  employeeId?: string;
   employee: EmployeeProfile;
   trip: TravelRequestInput['trip'];
   selectedOffer: FlightOfferSummary;
@@ -88,6 +89,8 @@ export interface TravelRequestRecord {
   createdAt: string;
   decidedAt?: string;
   rejectionReason?: string;
+  managerName?: string;
+  managerEmail?: string;
   booking?: {
     pnr: string;
     orderId: string;

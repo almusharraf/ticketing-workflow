@@ -10,6 +10,7 @@ export type TravelRequestStatus =
 
 export interface TravelRequestRecord {
   id: string;
+  employeeId?: string;
   employee: EmployeeProfile;
   trip: TravelRequestInput['trip'];
   selectedOffer: FlightOfferSummary;
@@ -17,6 +18,8 @@ export interface TravelRequestRecord {
   createdAt: string;
   decidedAt?: string;
   rejectionReason?: string;
+  managerName?: string;
+  managerEmail?: string;
   booking?: {
     pnr: string;
     orderId: string;
@@ -45,6 +48,15 @@ export async function createTravelRequest(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ employee, trip, selectedOffer }),
+  });
+  return unwrap(res);
+}
+
+export async function createAutoTravelRequest(employeeId: string): Promise<TravelRequestRecord> {
+  const res = await fetch('/api/travel-requests/auto', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employeeId }),
   });
   return unwrap(res);
 }

@@ -1,18 +1,15 @@
 import { ReactNode } from 'react';
 
-type Step = 'request' | 'results' | 'review' | 'status';
+type Step = 'auto' | 'status';
 
 interface Props {
   children: ReactNode;
   sidebar?: ReactNode;
   step: Step;
-  onBack?: () => void;
 }
 
 const STEPS: { id: Step; label: string }[] = [
-  { id: 'request', label: 'Request' },
-  { id: 'results', label: 'Flights' },
-  { id: 'review', label: 'Review' },
+  { id: 'auto', label: 'Request' },
   { id: 'status', label: 'Status' },
 ];
 
@@ -20,7 +17,7 @@ function stepIndex(step: Step): number {
   return STEPS.findIndex((s) => s.id === step);
 }
 
-export function ErpLayout({ children, sidebar, step, onBack }: Props) {
+export function ErpLayout({ children, sidebar, step }: Props) {
   const current = stepIndex(step);
 
   return (
@@ -38,11 +35,6 @@ export function ErpLayout({ children, sidebar, step, onBack }: Props) {
             <span className="eyebrow">Travel</span>
             <h1 className="erp-header__title">Travel request</h1>
           </div>
-          {onBack && step !== 'request' && step !== 'status' && (
-            <button type="button" className="erp-header__back" onClick={onBack}>
-              ← Back
-            </button>
-          )}
         </div>
         <div className="step-indicator">
           {STEPS.map((s, i) => (

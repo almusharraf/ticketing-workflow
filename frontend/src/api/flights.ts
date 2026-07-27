@@ -66,19 +66,3 @@ export interface TravelRequestInput {
     reason?: string;
   };
 }
-
-export async function searchFlights(input: TravelRequestInput): Promise<FlightOfferSummary[]> {
-  const res = await fetch('/api/flights/search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || body.error || 'Flight search failed');
-  }
-
-  const data = await res.json();
-  return data.offers;
-}

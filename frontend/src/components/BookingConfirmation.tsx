@@ -93,6 +93,12 @@ export function BookingConfirmation({ request, onStartOver }: Props) {
       <ReceiptCard request={request} />
 
       <div className="booking-confirmation__actions">
+        <Button
+          variant="outline"
+          onClick={() => window.open(`/api/travel-requests/${request.id}/ticket.pdf`, '_blank')}
+        >
+          Download ticket (PDF)
+        </Button>
         <Button onClick={onStartOver}>Book another trip</Button>
       </div>
     </div>
