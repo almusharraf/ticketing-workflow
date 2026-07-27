@@ -3,6 +3,7 @@ import { createTravelRequest, getTravelRequest, updateTravelRequest } from '../s
 import { bookOffer } from '../services/booking';
 import { searchCheapestFlights } from '../services/flightSearch';
 import { generateTicketPdf } from '../services/ticketPdf';
+import { getFlightStatus } from '../services/aviationstackClient';
 import { getEmployeeRecord } from '../data/employeeDirectory';
 import { TravelRequestInput, FlightOfferSummary } from '../types/travel';
 
@@ -145,6 +146,37 @@ travelRequestsRouter.get('/:id/ticket.pdf', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="ticket-${record.booking.pnr}.pdf"`);
   doc.pipe(res);
   doc.end();
+});
+
+travelRequestsRouter.get('/:id/flight-status', async (req, res) => {
+  const record = getTravelRequest(req.params.id);
+  if (!record) {
+    res.status(404).json({ error: 'Travel request not found' });
+    return;
+  }
+  if (record.status !== 'booked') {
+    res.status(409).json({ error: 'Flight status is only available once the request is booked' });
+    return;
+  }
+
+  const outboundSegment = record.selectedOffer.itineraries[0]?.segments[0];
+  if (!outboundSegment) {
+    res.status(200).json({ status: null, message: 'No segment to look up' });
+    return;
+  }
+
+  const departureDate = outboundSegment.departure.slice(0, 10);
+  const status = await getFlightStatus(outboundSegment.carrierCode, outboundSegment.flightNumber, departureDate);
+
+  if (!status) {
+    res.json({
+      status: null,
+      message: 'No live status available yet for this flight (schedules for far-out dates may not be published yet).',
+    });
+    return;
+  }
+
+  res.json({ status });
 });
 
 travelRequestsRouter.post('/:id/reject', (req, res) => {

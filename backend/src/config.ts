@@ -26,4 +26,9 @@ export const config = {
     clientId: process.env.AMADEUS_CLIENT_ID ?? '',
     clientSecret: process.env.AMADEUS_CLIENT_SECRET ?? '',
   },
+  // Post-booking flight status tracking (delays/cancellations/gate changes) -
+  // a status/schedule API, not a fares API, so it never joins flight search.
+  aviationstack: {
+    apiKey: process.env.AVIATION_STACK_API_KEY ?? '',
+  },
 };

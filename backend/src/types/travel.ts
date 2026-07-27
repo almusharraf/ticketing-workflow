@@ -71,6 +71,28 @@ export interface FlightOfferSummary {
   raw: unknown;
 }
 
+export interface FlightStatusInfo {
+  flightStatus: 'scheduled' | 'active' | 'landed' | 'cancelled' | 'incident' | 'diverted' | string;
+  departure: {
+    airport: string;
+    scheduled: string;
+    estimated?: string;
+    actual?: string;
+    delayMinutes?: number;
+    terminal?: string;
+    gate?: string;
+  };
+  arrival: {
+    airport: string;
+    scheduled: string;
+    estimated?: string;
+    actual?: string;
+    delayMinutes?: number;
+    terminal?: string;
+    gate?: string;
+  };
+}
+
 export type TravelRequestStatus =
   | 'pending_approval'
   | 'approved'

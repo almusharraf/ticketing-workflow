@@ -5,7 +5,8 @@ employee's profile and already-decided trip are pulled from the ERP directory
 (no manual form), the system searches and auto-selects the cheapest bookable
 fare, a manager approves, and it's booked automatically on the balance
 already on file — no card details entered anywhere in this app. A downloadable
-PDF ticket is generated once booked.
+PDF ticket is generated once booked, and flight status/delay tracking is
+available afterward via AviationStack.
 
 Flight search aggregates prices from Duffel, Kiwi.com, Skyscanner,
 Travelpayouts, and Amadeus for comparison — **booking always happens through
@@ -97,6 +98,15 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
 - Ticket PDFs (`GET /api/travel-requests/:id/ticket.pdf`) are generated with
   `pdfkit` from the booking record — only available once a request reaches
   `booked` status.
+- Flight status tracking (`GET /api/travel-requests/:id/flight-status`, via
+  AviationStack) is a schedule/status lookup, not a fares API — it never
+  affects search or booking. Confirmed live that the `flight_date` query
+  param is gated behind a paid tier (a bare key gets a 403
+  `function_access_restricted` if it's included), so the client fetches by
+  `flight_iata` only and matches the date client-side. In practice this
+  plan's coverage is real-time plus roughly the last day — a leave-travel
+  booking made months out will show "no status yet" until much closer to
+  the flight date, which is expected, not a bug.
 - In Duffel's sandbox, search results include synthetic test content and can
   vary in reliability by route. `LOS`–`LHR` is a known-good route for testing.
 - Comparison-source integrations (Kiwi, Skyscanner, Travelpayouts, Amadeus)

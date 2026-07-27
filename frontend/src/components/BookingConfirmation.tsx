@@ -3,6 +3,7 @@ import { formatDate, formatMoney } from '../utils/travel';
 import { Button } from './ui/Button';
 import { StatusBadge } from './ui/StatusBadge';
 import { ItineraryDetail } from './ItineraryDetail';
+import { FlightStatusPanel } from './FlightStatusPanel';
 
 interface Props {
   request: TravelRequestRecord;
@@ -91,6 +92,8 @@ export function BookingConfirmation({ request, onStartOver }: Props) {
       </div>
 
       <ReceiptCard request={request} />
+
+      <FlightStatusPanel requestId={request.id} />
 
       <div className="booking-confirmation__actions">
         <Button
