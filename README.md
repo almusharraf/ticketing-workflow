@@ -86,11 +86,33 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
 
 ## Notes
 
-- Trip requests are stored in memory on the server — restarting the server
-  clears them.
+- Trip requests persist in a local SQLite file (`backend/data/travel.db`,
+  gitignored) via Node's built-in `node:sqlite` — survives server restarts.
+  Uses `node:sqlite` instead of a package like `better-sqlite3` specifically
+  to avoid a native-module build step (no Python/node-gyp toolchain
+  required); confirmed live that a genuine process kill + restart still
+  finds a request created beforehand. The whole record is stored as one
+  JSON blob per row (single-table audit log, not a full relational schema).
 - Employees and their pending trips are mocked in
   `backend/src/data/employeeDirectory.ts` (stand-in for the ERP's employee +
   HR-approved-leave records). Add/edit entries there for more test cases.
+- Before a request is auto-created, `backend/src/validation/tripValidation.ts`
+  checks the passport expires at least 6 months after the trip's return date
+  and blocks with a clear message (expiry date + required cutoff) if not.
+- Booked trips can be cancelled (`POST /api/travel-requests/:id/cancel`,
+  "Cancel trip" button on the confirmation screen, with a confirm step).
+  Calls Duffel's two-step order-cancellation flow (quote, then confirm) via
+  `backend/src/services/cancellation.ts`. If Duffel refuses (fare rules,
+  deadline passed), its exact reason is shown, not a generic error —
+  confirmed live via a real refusal: `422: This order cannot be cancelled
+  through the API`.
+- `GET /api/travel-requests` lists every request across all employees
+  (newest first) for a read-only audit view at `/history` — no router
+  library, just a pathname check in `main.tsx`. Row clicks link back into
+  the existing status/confirmation view via `/?id=<requestId>`.
+- The approval screen shows the full outbound/return itinerary (airline,
+  flight numbers, times, layovers) before the manager approves — not just a
+  route/fare summary — since approving immediately triggers auto-payment.
 - The automated flow (`POST /api/travel-requests/auto`) only ever picks a
   `source: 'duffel'` offer to submit for approval, even though search results
   are aggregated across all providers — only Duffel offers can actually be

@@ -6,7 +6,8 @@ export type TravelRequestStatus =
   | 'rejected'
   | 'booking'
   | 'booked'
-  | 'booking_failed';
+  | 'booking_failed'
+  | 'cancelled';
 
 export interface TravelRequestRecord {
   id: string;
@@ -27,6 +28,12 @@ export interface TravelRequestRecord {
     fareRules?: string;
     chargedAmount: string;
     chargedCurrency: string;
+  };
+  cancellation?: {
+    cancellationId: string;
+    refundAmount: string;
+    refundCurrency: string;
+    cancelledAt: string;
   };
   failureReason?: string;
 }
@@ -72,6 +79,11 @@ export async function rejectTravelRequest(id: string, reason?: string): Promise<
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reason }),
   });
+  return unwrap(res);
+}
+
+export async function cancelTravelRequest(id: string): Promise<TravelRequestRecord> {
+  const res = await fetch(`/api/travel-requests/${id}/cancel`, { method: 'POST' });
   return unwrap(res);
 }
 

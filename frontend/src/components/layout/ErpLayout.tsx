@@ -35,6 +35,9 @@ export function ErpLayout({ children, sidebar, step }: Props) {
             <span className="eyebrow">Travel</span>
             <h1 className="erp-header__title">Travel request</h1>
           </div>
+          <a className="erp-header__back" href="/history">
+            View history
+          </a>
         </div>
         <div className="step-indicator">
           {STEPS.map((s, i) => (

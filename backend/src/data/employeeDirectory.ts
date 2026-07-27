@@ -26,6 +26,10 @@ export const employeeDirectory: EmployeeDirectoryEntry[] = [
       passportExpiry: '2029-03-15',
     },
     pendingTrip: {
+      // Temporarily swapped from DMM->DXB to the known-reliable LOS->LHR
+      // route so booked/cancel/history can be tested live while Duffel's
+      // sandbox is 503ing/rejecting stale offers on DMM routes (see README).
+      // Swap back to DMM->DXB once Duffel's sandbox stabilizes.
       originLocationCode: 'LOS',
       destinationLocationCode: 'LHR',
       departureDate: '2026-09-10',
@@ -37,37 +41,58 @@ export const employeeDirectory: EmployeeDirectoryEntry[] = [
     managerName: 'Mark Dela Cruz',
     managerEmail: 'mark.cruz@example.com',
   },
-  {
-    employeeId: 'EMP-1002',
-    profile: {
-      title: 'mr',
-      givenName: 'Farhan',
-      familyName: 'Saud',
-      dateOfBirth: '1988-11-02',
-      gender: 'm',
-      email: 'farhan.saud@example.com',
-      phoneNumber: '+966551234567',
-      passportNumber: 'P7654321',
-      passportExpiry: '2028-06-30',
-    },
-    pendingTrip: {
-      // Duffel's sandbox is known to be flaky/thin on DMM routes specifically
-      // (see README) - this entry may come back with no bookable Duffel fare
-      // until on a live key. Kept in the directory anyway since it's the
-      // route this feature was actually requested for.
-      originLocationCode: 'DMM',
-      destinationLocationCode: 'KHI',
-      departureDate: '2026-09-15',
-      returnDate: '2026-09-25',
-      cabinClass: 'ECONOMY',
-      checkedBags: 1,
-      reason: 'Annual leave',
-    },
-    managerName: 'Layla Omar',
-    managerEmail: 'layla.omar@example.com',
+{
+  employeeId: 'EMP-1002',
+  profile: {
+    title: 'mr',
+    givenName: 'Farhan',
+    familyName: 'Saud',
+    dateOfBirth: '1988-11-02',
+    gender: 'm',
+    email: 'farhan.saud@example.com',
+    phoneNumber: '+966551234567',
+    passportNumber: 'P7654321',
+    passportExpiry: '2028-06-30',
   },
+  pendingTrip: {
+    originLocationCode: 'DMM',
+    destinationLocationCode: 'KHI',
+    departureDate: '2026-09-15',
+    returnDate: '2026-09-25',
+    cabinClass: 'ECONOMY',
+    checkedBags: 1,
+    reason: 'Annual leave',
+  },
+  managerName: 'Layla Omar',
+  managerEmail: 'layla.omar@example.com',
+},
+{
+  employeeId: 'EMP-1003',
+  profile: {
+    title: 'mr',
+    givenName: 'Ahmed',
+    familyName: 'Khalid',
+    dateOfBirth: '1998-11-02',
+    gender: 'm',
+    email: 'ahmed.khalid@example.com',
+    phoneNumber: '+966551234567',
+    passportNumber: 'P743215',
+    passportExpiry: '2029-06-30',
+  },
+  pendingTrip: {
+    originLocationCode: 'DMM',
+    destinationLocationCode: 'DOH',
+    departureDate: '2026-09-15',
+    returnDate: '2026-09-25',
+    cabinClass: 'ECONOMY',
+    checkedBags: 1,
+    reason: 'Annual leave',
+  },
+  managerName: 'Layla Omar',
+  managerEmail: 'layla.omar@example.com',
+},
 ];
 
 export function getEmployeeRecord(employeeId: string): EmployeeDirectoryEntry | undefined {
-  return employeeDirectory.find((e) => e.employeeId === employeeId);
+return employeeDirectory.find((e) => e.employeeId === employeeId);
 }

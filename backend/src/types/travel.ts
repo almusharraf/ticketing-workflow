@@ -99,7 +99,8 @@ export type TravelRequestStatus =
   | 'rejected'
   | 'booking'
   | 'booked'
-  | 'booking_failed';
+  | 'booking_failed'
+  | 'cancelled';
 
 export interface TravelRequestRecord {
   id: string;
@@ -120,6 +121,12 @@ export interface TravelRequestRecord {
     fareRules?: string;
     chargedAmount: string;
     chargedCurrency: string;
+  };
+  cancellation?: {
+    cancellationId: string;
+    refundAmount: string;
+    refundCurrency: string;
+    cancelledAt: string;
   };
   failureReason?: string;
 }

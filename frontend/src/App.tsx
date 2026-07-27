@@ -3,6 +3,7 @@ import { listEmployees, DirectoryEmployee } from './api/employees';
 import {
   approveTravelRequest,
   createAutoTravelRequest,
+  getTravelRequest,
   rejectTravelRequest,
   TravelRequestRecord,
 } from './api/travelRequests';
@@ -32,6 +33,19 @@ export default function App() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Could not load employee directory'))
       .finally(() => setLoadingEmployees(false));
+  }, []);
+
+  // Lets the /history page link a row straight into this existing status/
+  // confirmation view via /?id=<requestId>, without a router.
+  useEffect(() => {
+    const linkedId = new URLSearchParams(window.location.search).get('id');
+    if (!linkedId) return;
+    getTravelRequest(linkedId)
+      .then((record) => {
+        setSubmittedRequest(record);
+        setStep('status');
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load that request'));
   }, []);
 
   async function handleAutoSubmit() {
@@ -75,6 +89,10 @@ export default function App() {
     }
   }
 
+  function handleCancelled(updated: TravelRequestRecord) {
+    setSubmittedRequest(updated);
+  }
+
   function handleStartOver() {
     setSubmittedRequest(null);
     setStep('auto');
@@ -102,6 +120,7 @@ export default function App() {
           onApprove={handleApprove}
           onReject={handleReject}
           onStartOver={handleStartOver}
+          onCancelled={handleCancelled}
           deciding={deciding}
         />
       )}

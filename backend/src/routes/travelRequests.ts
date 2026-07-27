@@ -1,13 +1,33 @@
 import { Router } from 'express';
-import { createTravelRequest, getTravelRequest, updateTravelRequest } from '../store/travelRequests';
+import { createTravelRequest, getTravelRequest, updateTravelRequest, listTravelRequests } from '../store/travelRequests';
 import { bookOffer } from '../services/booking';
 import { searchCheapestFlights } from '../services/flightSearch';
 import { generateTicketPdf } from '../services/ticketPdf';
 import { getFlightStatus } from '../services/aviationstackClient';
+import { cancelOrder } from '../services/cancellation';
 import { getEmployeeRecord } from '../data/employeeDirectory';
+import { validatePassportExpiry } from '../validation/tripValidation';
 import { TravelRequestInput, FlightOfferSummary } from '../types/travel';
 
 export const travelRequestsRouter = Router();
+
+// Read-only audit/history view across all employees - queries the existing
+// in-memory store as-is, no new storage.
+travelRequestsRouter.get('/', (_req, res) => {
+  const requests = listTravelRequests().map((r) => ({
+    id: r.id,
+    employeeName: `${r.employee.givenName} ${r.employee.familyName}`,
+    route: `${r.trip.originLocationCode} → ${r.trip.destinationLocationCode}`,
+    departureDate: r.trip.departureDate,
+    returnDate: r.trip.returnDate,
+    status: r.status,
+    fare: { total: r.selectedOffer.price.total, currency: r.selectedOffer.price.currency },
+    pnr: r.booking?.pnr,
+    bookedAt: r.booking?.bookedAt,
+    cancelledAt: r.cancellation?.cancelledAt,
+  }));
+  res.json({ requests });
+});
 
 interface CreateBody {
   employee: TravelRequestInput['employee'];
@@ -47,6 +67,16 @@ travelRequestsRouter.post('/auto', async (req, res) => {
   const directoryEntry = getEmployeeRecord(employeeId);
   if (!directoryEntry) {
     res.status(404).json({ error: `No ERP record found for employee ${employeeId}` });
+    return;
+  }
+
+  const passportCheck = validatePassportExpiry(
+    directoryEntry.profile.passportExpiry,
+    directoryEntry.pendingTrip.departureDate,
+    directoryEntry.pendingTrip.returnDate
+  );
+  if (!passportCheck.valid) {
+    res.status(400).json({ error: passportCheck.message });
     return;
   }
 
@@ -177,6 +207,37 @@ travelRequestsRouter.get('/:id/flight-status', async (req, res) => {
   }
 
   res.json({ status });
+});
+
+travelRequestsRouter.post('/:id/cancel', async (req, res) => {
+  const record = getTravelRequest(req.params.id);
+  if (!record) {
+    res.status(404).json({ error: 'Travel request not found' });
+    return;
+  }
+  if (record.status !== 'booked' || !record.booking) {
+    res.status(409).json({ error: `Request is ${record.status}, not booked - nothing to cancel` });
+    return;
+  }
+
+  try {
+    const result = await cancelOrder(record.booking.orderId);
+    const updated = updateTravelRequest(record.id, {
+      status: 'cancelled',
+      cancellation: {
+        cancellationId: result.cancellationId,
+        refundAmount: result.refundAmount,
+        refundCurrency: result.refundCurrency,
+        cancelledAt: result.cancelledAt,
+      },
+    });
+    res.json({ request: updated });
+  } catch (err: any) {
+    // Duffel's own message (fare rules, deadline passed, etc.) is preserved
+    // unmodified by duffelRequest - surface it as-is rather than a generic error.
+    console.error('[travelRequests.cancel] cancellation failed', err);
+    res.status(502).json({ error: 'Cancellation failed', detail: err?.message });
+  }
 });
 
 travelRequestsRouter.post('/:id/reject', (req, res) => {

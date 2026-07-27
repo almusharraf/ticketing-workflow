@@ -1,6 +1,7 @@
 import { TravelRequestRecord } from '../api/travelRequests';
 import { ApprovalTimeline } from './ApprovalTimeline';
 import { BookingConfirmation } from './BookingConfirmation';
+import { ItineraryDetail } from './ItineraryDetail';
 import { Button } from './ui/Button';
 import { StatusBadge } from './ui/StatusBadge';
 import { formatMoney } from '../utils/travel';
@@ -10,16 +11,18 @@ interface Props {
   onApprove: () => void;
   onReject: () => void;
   onStartOver: () => void;
+  onCancelled: (updated: TravelRequestRecord) => void;
   deciding: boolean;
 }
 
-export function RequestStatus({ request, onApprove, onReject, onStartOver, deciding }: Props) {
+export function RequestStatus({ request, onApprove, onReject, onStartOver, onCancelled, deciding }: Props) {
   const { selectedOffer, trip, employee } = request;
   const outbound = selectedOffer.itineraries[0];
   const firstSeg = outbound.segments[0];
+  const airlineName = selectedOffer.airlineNames[0] ?? selectedOffer.airlines[0];
 
-  if (request.status === 'booked' && request.booking) {
-    return <BookingConfirmation request={request} onStartOver={onStartOver} />;
+  if ((request.status === 'booked' || request.status === 'cancelled') && request.booking) {
+    return <BookingConfirmation request={request} onStartOver={onStartOver} onCancelled={onCancelled} />;
   }
 
   return (
@@ -45,6 +48,10 @@ export function RequestStatus({ request, onApprove, onReject, onStartOver, decid
           </span>
         </div>
         <div className="request-status__row">
+          <span>Airline</span>
+          <span>{airlineName}</span>
+        </div>
+        <div className="request-status__row">
           <span>Departure</span>
           <span>
             {firstSeg.from} · {new Date(firstSeg.departure).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
@@ -55,6 +62,15 @@ export function RequestStatus({ request, onApprove, onReject, onStartOver, decid
           <span>{formatMoney(selectedOffer.price.currency, selectedOffer.price.total)}</span>
         </div>
       </div>
+
+      {request.status === 'pending_approval' && (
+        <div className="booking-confirmation__itineraries">
+          <ItineraryDetail label="Outbound" itinerary={selectedOffer.itineraries[0]} />
+          {selectedOffer.itineraries[1] && (
+            <ItineraryDetail label="Return" itinerary={selectedOffer.itineraries[1]} />
+          )}
+        </div>
+      )}
 
       {request.status === 'pending_approval' && (
         <div className="manager-panel">
