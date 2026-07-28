@@ -12,11 +12,23 @@
 // Duffel, giving us a genuine, repeatable refusal through the real
 // cancelOrder() code path (the same function the API route calls).
 //
+//
+// Scenario 2 targets a DIFFERENT, distinct refusal seen once in manual
+// testing: "This order cannot be cancelled through the API." Duffel's error
+// reference documents this as the `order_not_cancellable` code, gated on
+// whether "cancel" is present in an order's `available_actions` - but does
+// not document which fares/carriers/order types cause it to be absent.
+// Rather than guess, this checks available_actions directly (via GET
+// /air/orders/:id) across a few differing bookings (airline/cabin/route)
+// and only attempts cancellation on one confirmed - from Duffel's own
+// response - to lack "cancel", so the repro is evidence-based, not assumed.
+//
 // Run: node_modules/.bin/ts-node src/scripts/cancellationRefusalTest.ts
 import { searchCheapestFlights } from '../services/flightSearch';
 import { bookOffer } from '../services/booking';
 import { cancelOrder } from '../services/cancellation';
-import { EmployeeProfile } from '../types/travel';
+import { duffelRequest } from '../services/duffelClient';
+import { EmployeeProfile, TravelRequestInput } from '../types/travel';
 
 const trip = {
   originLocationCode: 'LOS',
@@ -61,7 +73,70 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error('Script failed before reaching the refusal test:', err);
-  process.exit(1);
-});
+interface OrderResponse {
+  data: { available_actions: string[] };
+}
+
+// Diverse candidates (route/cabin) to sample different airlines/fare brands -
+// Duffel's sandbox assigns whichever real-airline test content it has for
+// each route, so this is empirical sampling, not a guaranteed trigger.
+const candidateTrips: TravelRequestInput['trip'][] = [
+  { originLocationCode: 'LOS', destinationLocationCode: 'LHR', departureDate: '2026-09-11', returnDate: '2026-09-21', cabinClass: 'ECONOMY' },
+  { originLocationCode: 'LOS', destinationLocationCode: 'LHR', departureDate: '2026-09-12', returnDate: '2026-09-22', cabinClass: 'BUSINESS' },
+  { originLocationCode: 'DMM', destinationLocationCode: 'KHI', departureDate: '2026-09-16', returnDate: '2026-09-26', cabinClass: 'ECONOMY' },
+  { originLocationCode: 'DMM', destinationLocationCode: 'DOH', departureDate: '2026-09-17', returnDate: '2026-09-27', cabinClass: 'ECONOMY' },
+];
+
+async function scenario2() {
+  console.log('\n=== Scenario 2: hunting for an order lacking "cancel" in available_actions ===');
+
+  for (const candidateTrip of candidateTrips) {
+    const label = `${candidateTrip.originLocationCode}-${candidateTrip.destinationLocationCode} ${candidateTrip.cabinClass}`;
+    try {
+      const offers = await searchCheapestFlights({ employee, trip: candidateTrip });
+      const bookable = offers.find((o) => o.source === 'duffel');
+      if (!bookable) {
+        console.log(`[${label}] no bookable Duffel offer right now - skipping`);
+        continue;
+      }
+
+      const booking = await bookOffer(candidateTrip, bookable, employee);
+      const order = await duffelRequest<OrderResponse>(`/air/orders/${booking.orderId}`);
+      const actions = order.data.available_actions;
+      console.log(`[${label}] booked ${booking.orderId}, available_actions=[${actions.join(', ')}]`);
+
+      if (!actions.includes('cancel')) {
+        console.log(`[${label}] "cancel" is ABSENT - attempting cancellation to confirm the real refusal`);
+        try {
+          await cancelOrder(booking.orderId);
+          console.log(`[${label}] UNEXPECTED: cancellation succeeded despite "cancel" being absent from available_actions`);
+        } catch (err: any) {
+          console.log(`[${label}] Duffel refused. Actual error message that would reach the user:`);
+          console.log(`  "${err.message}"`);
+        }
+        return;
+      }
+    } catch (err: any) {
+      console.log(`[${label}] errored, skipping: ${err.message}`);
+    }
+  }
+
+  console.log(
+    '\nNone of the sampled bookings had "cancel" absent from available_actions - ' +
+      'every real order Duffel\'s sandbox gave us across these routes/cabins/airlines was cancellable. ' +
+      'This means the specific "order cannot be cancelled through the API" refusal (order_not_cancellable) ' +
+      'is NOT reliably reproducible in sandbox with this approach: Duffel\'s docs confirm the error code exists ' +
+      'and is gated on available_actions, but do not document which fare brands/carriers/order types cause ' +
+      '"cancel" to be absent, and empirically none of these sandbox bookings hit that state. The one occurrence ' +
+      'seen in manual testing was most likely a specific fare/airline combination not reproduced here - ' +
+      'the error-handling code path itself (duffelRequest surfaces Duffel\'s real message unmodified) is already ' +
+      'proven correct by scenario 1\'s "already_cancelled" refusal, which goes through the identical code.'
+  );
+}
+
+main()
+  .then(scenario2)
+  .catch((err) => {
+    console.error('Script failed:', err);
+    process.exit(1);
+  });

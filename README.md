@@ -115,10 +115,17 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
   already-cancelled order again) and prints Duffel's actual message - run
   with `node_modules/.bin/ts-node src/scripts/cancellationRefusalTest.ts`
   from `backend/`. Confirmed live: `422: This order has already been
-  cancelled.` (A different, one-off refusal - `422: This order cannot be
-  cancelled through the API` - was seen once in manual testing but isn't
-  deterministically reproducible; likely a different fare/order-type
-  restriction rather than the already-cancelled case this script targets.)
+  cancelled.` The script's second scenario investigates the other, one-off
+  refusal seen once in manual testing - `422: This order cannot be
+  cancelled through the API`, Duffel's documented `order_not_cancellable`
+  code, gated on whether `"cancel"` is present in an order's
+  `available_actions`. Duffel's docs don't say which fares/carriers/order
+  types cause it to be absent, so the script books across a few
+  routes/cabins and checks `available_actions` directly rather than
+  guessing; every real order it could book in sandbox had `cancel` present,
+  so this specific refusal is **not reliably reproducible in sandbox** with
+  the fare/route combinations available here. The error-surfacing code path
+  is already proven correct via the identical mechanism in scenario 1.
 - `GET /api/travel-requests` lists every request across all employees
   (newest first) for a read-only audit view at `/history` — no router
   library, just a pathname check in `main.tsx`. Row clicks link back into
