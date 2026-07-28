@@ -33,4 +33,14 @@ export const config = {
   aviationstack: {
     apiKey: process.env.AVIATION_STACK_API_KEY ?? '',
   },
+  // Best-effort email notifications - left unset, sendEmail() just skips
+  // silently (see services/email.ts). Never blocks or rolls back the
+  // booking/cancellation/approval-request action it's attached to.
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER ?? '',
+    pass: process.env.SMTP_PASS ?? '',
+  },
 };

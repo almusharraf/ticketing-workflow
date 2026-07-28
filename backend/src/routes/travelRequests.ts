@@ -7,6 +7,11 @@ import { getFlightStatus } from '../services/aviationstackClient';
 import { cancelOrder } from '../services/cancellation';
 import { getEmployeeRecord } from '../data/employeeDirectory';
 import { validatePassportExpiry } from '../validation/tripValidation';
+import {
+  sendApprovalRequestEmail,
+  sendBookingConfirmationEmail,
+  sendCancellationConfirmationEmail,
+} from '../services/notifications';
 import { TravelRequestInput, FlightOfferSummary } from '../types/travel';
 
 export const travelRequestsRouter = Router();
@@ -101,6 +106,7 @@ travelRequestsRouter.post('/auto', async (req, res) => {
       managerEmail: directoryEntry.managerEmail,
     });
 
+    await sendApprovalRequestEmail(record);
     res.status(201).json({ request: record });
   } catch (err: any) {
     console.error('[travelRequests.auto] search failed', err);
@@ -149,6 +155,7 @@ travelRequestsRouter.post('/:id/approve', async (req, res) => {
         chargedCurrency,
       },
     });
+    if (updated) await sendBookingConfirmationEmail(updated);
     res.json({ request: updated });
   } catch (err: any) {
     console.error('[travelRequests.approve] booking failed', err);
@@ -231,6 +238,7 @@ travelRequestsRouter.post('/:id/cancel', async (req, res) => {
         cancelledAt: result.cancelledAt,
       },
     });
+    if (updated) await sendCancellationConfirmationEmail(updated);
     res.json({ request: updated });
   } catch (err: any) {
     // Duffel's own message (fare rules, deadline passed, etc.) is preserved

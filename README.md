@@ -37,6 +37,10 @@ dev.sh     Runs both together (macOS/Linux)
   - **Travelpayouts Data API** — self-serve signup, cached (not live) fares.
   - **Amadeus Self-Service Flight Offers Search** — self-serve signup today,
     but Amadeus is sunsetting this tier 2026-07-17; treat as a stopgap.
+- Optional email notifications — a Gmail address + an
+  [App Password](https://myaccount.google.com/apppasswords) (requires 2FA
+  on that account). Left unset, the app works exactly the same; emails are
+  best-effort and never block or roll back a booking/cancellation.
 
 ## Setup
 
@@ -92,6 +96,17 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
 
 ## Notes
 
+- Three lifecycle emails are sent best-effort via Gmail (see `SMTP_USER`/
+  `SMTP_PASSWORD` above): an approval-request email to the manager when a
+  request is auto-created, a booking confirmation to the employee once
+  booked, and a cancellation/refund confirmation once cancelled
+  (`backend/src/services/notifications.ts` and `email.ts`). None of these
+  existed anywhere in this codebase before, even as console.log stand-ins -
+  confirmed by grepping the whole backend. `sendEmail()` never throws -
+  a failed send is logged clearly but never blocks or undoes the real
+  booking/cancellation/approval it's attached to. Verify SMTP credentials in
+  isolation with `node_modules/.bin/ts-node src/scripts/testEmail.ts` from
+  `backend/` before relying on the full flow.
 - Trip requests persist in a local SQLite file (`backend/data/travel.db`,
   gitignored) via Node's built-in `node:sqlite` — survives server restarts.
   Uses `node:sqlite` instead of a package like `better-sqlite3` specifically
