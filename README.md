@@ -151,6 +151,15 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
   the flight date, which is expected, not a bug.
 - In Duffel's sandbox, search results include synthetic test content and can
   vary in reliability by route. `LOS`–`LHR` is a known-good route for testing.
+  This includes physically implausible results with *real* airline names/
+  flight numbers on routes/schedules they don't actually fly — e.g. an
+  "American Airlines AA 1274" DMM→DOH "flight" lasting 53 minutes (AA has no
+  presence on that route in reality; the flight number is likely a real AA
+  domestic-US flight number, just recombined with fabricated route/timing
+  data). This is intentional sandbox behavior (real content mixed with
+  synthetic route/schedule data for testing), not a bug in this app — no
+  code-side filtering can reliably distinguish real vs. synthetic content in
+  test mode. Only a `duffel_live_` key resolves it.
 - Comparison-source integrations (Kiwi, Skyscanner, Travelpayouts, Amadeus)
   are written against each provider's public API docs but unverified against
   live responses (no live keys were available at the time of writing,
