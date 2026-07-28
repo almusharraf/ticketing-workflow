@@ -57,8 +57,8 @@ export const employeeDirectory: EmployeeDirectoryEntry[] = [
   pendingTrip: {
     originLocationCode: 'DMM',
     destinationLocationCode: 'KHI',
-    departureDate: '2026-09-15',
-    returnDate: '2026-09-25',
+    departureDate: '2026-08-15',
+    returnDate: '2026-08-25',
     cabinClass: 'ECONOMY',
     checkedBags: 1,
     reason: 'Annual leave',

@@ -2,6 +2,8 @@ import 'dotenv/config';
 
 export const config = {
   port: Number(process.env.PORT) || 4000,
+  // Empty means db.ts falls back to its own default (backend/data/travel.db).
+  dbPath: process.env.DB_PATH ?? '',
   duffel: {
     apiKey: process.env.DUFFEL_API_KEY ?? '',
     apiVersion: process.env.DUFFEL_API_VERSION || 'v2',

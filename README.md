@@ -63,6 +63,12 @@ DUFFEL_API_KEY=duffel_test_your_key_here
 DUFFEL_API_VERSION=v2
 ```
 
+By default, travel requests persist to `backend/data/travel.db`. Running
+multiple local instances (e.g. your own dev server plus a second one someone
+else is testing with) against the same path shares that data between them —
+set a different `DB_PATH` per instance in `.env` if you want isolated data
+for parallel dev/test.
+
 ## Running
 
 **macOS/Linux** — from the repo root:
@@ -103,9 +109,16 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
   "Cancel trip" button on the confirmation screen, with a confirm step).
   Calls Duffel's two-step order-cancellation flow (quote, then confirm) via
   `backend/src/services/cancellation.ts`. If Duffel refuses (fare rules,
-  deadline passed), its exact reason is shown, not a generic error —
-  confirmed live via a real refusal: `422: This order cannot be cancelled
-  through the API`.
+  deadline passed), its exact reason is shown, not a generic error.
+  `backend/src/scripts/cancellationRefusalTest.ts` repeatably reproduces a
+  real refusal (books a fresh order, cancels it, then cancels the
+  already-cancelled order again) and prints Duffel's actual message - run
+  with `node_modules/.bin/ts-node src/scripts/cancellationRefusalTest.ts`
+  from `backend/`. Confirmed live: `422: This order has already been
+  cancelled.` (A different, one-off refusal - `422: This order cannot be
+  cancelled through the API` - was seen once in manual testing but isn't
+  deterministically reproducible; likely a different fare/order-type
+  restriction rather than the already-cancelled case this script targets.)
 - `GET /api/travel-requests` lists every request across all employees
   (newest first) for a read-only audit view at `/history` — no router
   library, just a pathname check in `main.tsx`. Row clicks link back into
