@@ -46,6 +46,24 @@ export async function sendBookingConfirmationEmail(record: TravelRequestRecord):
   );
 }
 
+export async function sendRejectionEmail(record: TravelRequestRecord): Promise<void> {
+  const { employee, trip } = record;
+
+  await sendEmail(
+    employee.email,
+    'Your travel request was declined',
+    [
+      `Hi ${employee.givenName}, your travel request has been declined by ${record.managerName ?? 'your manager'}.`,
+      '',
+      `Route: ${trip.originLocationCode} -> ${trip.destinationLocationCode}${trip.returnDate ? ' (round trip)' : ''}`,
+      `Departure: ${trip.departureDate}${trip.returnDate ? `, return ${trip.returnDate}` : ''}`,
+      record.rejectionReason ? `Reason: ${record.rejectionReason}` : undefined,
+    ]
+      .filter(Boolean)
+      .join('\n')
+  );
+}
+
 export async function sendCancellationConfirmationEmail(record: TravelRequestRecord): Promise<void> {
   if (!record.cancellation || !record.booking) return;
   const { employee, booking, cancellation } = record;

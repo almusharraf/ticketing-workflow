@@ -83,7 +83,7 @@ interface OrderResponse {
 const candidateTrips: TravelRequestInput['trip'][] = [
   { originLocationCode: 'LOS', destinationLocationCode: 'LHR', departureDate: '2026-09-11', returnDate: '2026-09-21', cabinClass: 'ECONOMY' },
   { originLocationCode: 'LOS', destinationLocationCode: 'LHR', departureDate: '2026-09-12', returnDate: '2026-09-22', cabinClass: 'BUSINESS' },
-  { originLocationCode: 'DMM', destinationLocationCode: 'KHI', departureDate: '2026-09-16', returnDate: '2026-09-26', cabinClass: 'ECONOMY' },
+  { originLocationCode: 'DMM', destinationLocationCode: 'DXB', departureDate: '2026-09-16', returnDate: '2026-09-26', cabinClass: 'ECONOMY' },
   { originLocationCode: 'DMM', destinationLocationCode: 'DOH', departureDate: '2026-09-17', returnDate: '2026-09-27', cabinClass: 'ECONOMY' },
 ];
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createTravelRequest, getTravelRequest, updateTravelRequest, listTravelRequests } from '../store/travelRequests';
 import { bookOffer } from '../services/booking';
-import { searchCheapestFlights } from '../services/flightSearch';
+import { searchCheapestFlights, findBookableOffer } from '../services/flightSearch';
 import { generateTicketPdf } from '../services/ticketPdf';
 import { getFlightStatus } from '../services/aviationstackClient';
 import { cancelOrder } from '../services/cancellation';
@@ -11,6 +11,7 @@ import {
   sendApprovalRequestEmail,
   sendBookingConfirmationEmail,
   sendCancellationConfirmationEmail,
+  sendRejectionEmail,
 } from '../services/notifications';
 import { TravelRequestInput, FlightOfferSummary } from '../types/travel';
 
@@ -121,6 +122,40 @@ travelRequestsRouter.get('/:id', (req, res) => {
     return;
   }
   res.json({ request: record });
+});
+
+// Read-only price-drift check for the approval screen. record.selectedOffer.price
+// is already the originally-quoted price (set once at creation, never mutated by
+// approve/cancel/reject) - no separate "original price" field needed. Reuses the
+// same findBookableOffer() that /approve itself uses internally, so what the
+// manager sees here is the same fresh price they'd get by clicking approve.
+travelRequestsRouter.get('/:id/price-check', async (req, res) => {
+  const record = getTravelRequest(req.params.id);
+  if (!record) {
+    res.status(404).json({ error: 'Travel request not found' });
+    return;
+  }
+  if (record.status !== 'pending_approval') {
+    res.status(409).json({ error: 'Price check is only meaningful before approval' });
+    return;
+  }
+
+  try {
+    const fresh = await findBookableOffer(record.trip, record.selectedOffer);
+    const originalTotal = Number(record.selectedOffer.price.total);
+    const currentTotal = Number(fresh.totalAmount);
+    const deltaPercent = ((currentTotal - originalTotal) / originalTotal) * 100;
+
+    res.json({
+      originalPrice: { total: record.selectedOffer.price.total, currency: record.selectedOffer.price.currency },
+      currentPrice: { total: fresh.totalAmount, currency: fresh.totalCurrency },
+      deltaPercent,
+      significant: Math.abs(deltaPercent) > 10,
+    });
+  } catch (err: any) {
+    console.error('[travelRequests.price-check] failed', err);
+    res.status(502).json({ error: 'Price check failed', detail: err?.message });
+  }
 });
 
 travelRequestsRouter.post('/:id/approve', async (req, res) => {
@@ -248,7 +283,7 @@ travelRequestsRouter.post('/:id/cancel', async (req, res) => {
   }
 });
 
-travelRequestsRouter.post('/:id/reject', (req, res) => {
+travelRequestsRouter.post('/:id/reject', async (req, res) => {
   const record = getTravelRequest(req.params.id);
   if (!record) {
     res.status(404).json({ error: 'Travel request not found' });
@@ -264,5 +299,6 @@ travelRequestsRouter.post('/:id/reject', (req, res) => {
     decidedAt: new Date().toISOString(),
     rejectionReason: req.body?.reason,
   });
+  if (updated) await sendRejectionEmail(updated);
   res.json({ request: updated });
 });

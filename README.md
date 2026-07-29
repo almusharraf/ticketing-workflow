@@ -96,17 +96,34 @@ Then open http://localhost:5173. The API listens on http://localhost:4000
 
 ## Notes
 
-- Three lifecycle emails are sent best-effort via Gmail (see `SMTP_USER`/
-  `SMTP_PASSWORD` above): an approval-request email to the manager when a
-  request is auto-created, a booking confirmation to the employee once
-  booked, and a cancellation/refund confirmation once cancelled
+- Four lifecycle emails are sent best-effort via Gmail (see `SMTP_USER`/
+  `SMTP_PASS` above): an approval-request email to the manager when a
+  request is auto-created, a booking confirmation once booked, a
+  cancellation/refund confirmation once cancelled, and a rejection email to
+  the employee (with route/dates) once a manager rejects a request
   (`backend/src/services/notifications.ts` and `email.ts`). None of these
   existed anywhere in this codebase before, even as console.log stand-ins -
   confirmed by grepping the whole backend. `sendEmail()` never throws -
   a failed send is logged clearly but never blocks or undoes the real
-  booking/cancellation/approval it's attached to. Verify SMTP credentials in
-  isolation with `node_modules/.bin/ts-node src/scripts/testEmail.ts` from
-  `backend/` before relying on the full flow.
+  booking/cancellation/approval/rejection it's attached to. Verify SMTP
+  credentials in isolation with
+  `node_modules/.bin/ts-node src/scripts/testEmail.ts` from `backend/`
+  before relying on the full flow. Rejected requests reach a genuine
+  terminal state (no dead end - a distinct panel with "Start over") and
+  already show up in `/history` alongside booked/cancelled ones, since the
+  history endpoint never filtered by status.
+- The approval screen re-checks the live Duffel price before the manager
+  decides (`GET /:id/price-check`, `frontend/src/components/PriceDriftCheck.tsx`),
+  reusing the same `findBookableOffer` matcher `/approve` itself uses - so
+  what the manager sees is what they'd get. If the live price differs from
+  the originally-quoted one (`selectedOffer.price`, stored once at creation
+  and never mutated afterward) by more than 10%, it's called out explicitly
+  ("Originally X → Now Y (+Z%)"); otherwise just today's price is shown.
+  This check is a real Duffel search and took 2-6s in testing, so the row
+  shows "Checking latest price…" while it's in flight rather than sitting
+  blank. Confirmed live by forcing a delta (patching a stored price) and
+  watching both the loading state and the final callout render correctly
+  in a real browser, not just the API response.
 - Trip requests persist in a local SQLite file (`backend/data/travel.db`,
   gitignored) via Node's built-in `node:sqlite` — survives server restarts.
   Uses `node:sqlite` instead of a package like `better-sqlite3` specifically

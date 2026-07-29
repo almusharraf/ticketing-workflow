@@ -2,6 +2,7 @@ import { TravelRequestRecord } from '../api/travelRequests';
 import { ApprovalTimeline } from './ApprovalTimeline';
 import { BookingConfirmation } from './BookingConfirmation';
 import { ItineraryDetail } from './ItineraryDetail';
+import { PriceDriftCheck } from './PriceDriftCheck';
 import { Button } from './ui/Button';
 import { StatusBadge } from './ui/StatusBadge';
 import { formatMoney } from '../utils/travel';
@@ -57,10 +58,14 @@ export function RequestStatus({ request, onApprove, onReject, onStartOver, onCan
             {firstSeg.from} · {new Date(firstSeg.departure).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
         </div>
-        <div className="request-status__row">
-          <span>Fare</span>
-          <span>{formatMoney(selectedOffer.price.currency, selectedOffer.price.total)}</span>
-        </div>
+        {request.status === 'pending_approval' ? (
+          <PriceDriftCheck requestId={request.id} fallbackPrice={selectedOffer.price} />
+        ) : (
+          <div className="request-status__row">
+            <span>Fare</span>
+            <span>{formatMoney(selectedOffer.price.currency, selectedOffer.price.total)}</span>
+          </div>
+        )}
       </div>
 
       {request.status === 'pending_approval' && (
